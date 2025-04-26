@@ -57,8 +57,9 @@ void setup() {
 void loop() {
   while (Serial.available() > 0) {
     String input = Serial.readString();
-    processInput(input);
-    resetBrailleDisplay();
+    if (input == "~"){resetBrailleDisplay();} // sends reset for UI
+    else{processInput(input);}
+    Serial.println("done");
   }
 }
 
@@ -71,7 +72,7 @@ void raiseMotor(Servo &motor, int angle) {
 
 // puts all motors to their initial position
 void resetBrailleDisplay() {
-  delay(2000);
+  delay(1000);
   // Lower all motors
   motor1.write(0);
   motor2.write(0);
@@ -91,7 +92,7 @@ void resetBrailleDisplay() {
 void checkUpperCase(String input){
   bool isCap = false; // true if letter is capitalized
   bool isAllCap = false;  // true if whole word is capitalized
-  Serial.println("CheckUpperCase Input: " + input); // for debugging purposes only
+  //Serial.println("CheckUpperCase Input: " + input); // for debugging purposes only
   int wordEnd = input.indexOf(' '); // splits up input into words at a space
   // word ends at the end of the input
   if (wordEnd == -1) {
@@ -121,22 +122,21 @@ void checkUpperCase(String input){
   }
   // single letter is capitalized, motor 6 raises once
   if (isUpper){
-      Serial.println("is Upper");
+      //Serial.println("is Upper");
       raiseMotor(motor10, 90);
   }
 }
 
 // takes input and determines what it is so motors can move correctly
 void processInput(String input) {
-  int length = input.length();  // length of input
-  Serial.println(input);
+  int length = (input.length() - 1);  // length of input
   bool isDigits = false;  // true if input is a number
   bool isNonDigit = false;  // true if input is not a number, anything else
   // goes through input
   for(int i=0; i<length;i++){
     char currentchar = input[i];  // sets currentchar to the character at position i
     currentchar = tolower(currentchar); // makes currentchar lowercase
-    resetBrailleDisplay();
+    if(i > 0) {resetBrailleDisplay();}
     // currentchar is a digit
     if(isDigit(currentchar)){
       doDigit(currentchar); // moves motor for number shown

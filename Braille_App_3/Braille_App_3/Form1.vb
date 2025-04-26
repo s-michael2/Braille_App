@@ -78,22 +78,25 @@ Public Class Form1
             Return
         End If
 
+        SendReset()
         SendCommand(input)
-        PlaySound(input) ' Play corresponding sound for the input
+
     End Sub
 
     ' Send data to Arduino
     ' Send data for each character and update status dynamically
     Private Sub SendCommand(input As String)
         Try
+            input = Replace(input, "\n", "")
             ' Iterate through each character in the input string
             For Each character As Char In input
                 ' Ensure serial port is open before sending
                 If _serialPort IsNot Nothing AndAlso _serialPort.IsOpen Then
                     _serialPort.WriteLine(character.ToString()) ' Send the character to Arduino
+                    PlaySound(character.ToString()) ' Play corresponding sound for the input
                     LabelStatus.Text = $"Sent: {character}" ' Update status for each character
                     Application.DoEvents() ' Refresh UI immediately to reflect changes
-                    'System.Threading.Thread.Sleep(500) ' Optional delay for each character
+                    System.Threading.Thread.Sleep(4000) ' Optional delay for each character
 
                 Else
                     MessageBox.Show("Not connected to Arduino. Please connect first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -105,37 +108,46 @@ Public Class Form1
         End Try
     End Sub
 
+    Private Sub SendReset()
+        Try
+            If _serialPort IsNot Nothing AndAlso _serialPort.IsOpen Then
+                _serialPort.WriteLine("~ ".ToString()) ' Send the character to Arduino
+            Else
+                MessageBox.Show("Not connected to Arduino. Please connect first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Failed to send command: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     ' Play sound for each character in the input string with a delay and special handling for capital letters
+    ' Play sound for the given input and detect capital letters
+    ' Play sound for the given input and detect capital letters
     Private Sub PlaySound(input As String)
         Try
-            ' Iterate through each character in the input string
-            For Each character As Char In input
-                ' Add a delay before starting the audio
-                System.Threading.Thread.Sleep(1500) ' 1500 milliseconds delay
-
-                ' Play a special sound if the character is a capital letter
-                If Char.IsUpper(character) Then
-                    Dim capitalSound As String = "C:\Users\smich\source\repos\Braille_App_3\Sounds\capital.wav"
-                    If IO.File.Exists(capitalSound) Then
-                        Dim player As New SoundPlayer(capitalSound)
-                        player.Play() ' Play synchronously to ensure order
-                    End If
+            ' Check if the input starts with a capital letter
+            If Not String.IsNullOrEmpty(input) AndAlso Char.IsUpper(input(0)) Then
+                ' Play special sound for capital letters
+                Dim capitalSound As String = "C:\Users\smich\source\repos\Braille_App_3\Sounds\capital.wav"
+                If IO.File.Exists(capitalSound) Then
+                    Dim player As New SoundPlayer(capitalSound)
+                    player.PlaySync() ' Synchronously play the special sound
                 End If
+            End If
 
-                ' Play sound for the individual character
-                Dim soundFile As String = $"C:\Users\smich\source\repos\Braille_App_3\Sounds\{Char.ToLower(character)}.wav" ' Convert to lowercase for file naming
-                If IO.File.Exists(soundFile) Then
-                    Dim player As New SoundPlayer(soundFile)
-                    player.PlaySync() ' Play synchronously to ensure order
-                Else
-                    ' Play a default sound if no specific file exists
-                    Dim defaultSound As String = "C:\Users\smich\source\repos\Braille_App_3\Sounds\default.wav"
-                    If IO.File.Exists(defaultSound) Then
-                        Dim player As New SoundPlayer(defaultSound)
-                        player.Play() ' Play synchronously to ensure order
-                    End If
+            ' Play the corresponding letter sound
+            Dim soundFile As String = $"C:\Users\smich\source\repos\Braille_App_3\Sounds\{input.ToLower()}.wav" ' Convert input to lowercase for file naming
+            If IO.File.Exists(soundFile) Then
+                Dim player As New SoundPlayer(soundFile)
+                player.Play() ' Play the letter sound
+            Else
+                ' Play a default sound if no specific file exists
+                Dim defaultSound As String = "C:\Users\smich\source\repos\Braille_App_3\Sounds\default.wav"
+                If IO.File.Exists(defaultSound) Then
+                    Dim player As New SoundPlayer(defaultSound)
+                    player.Play()
                 End If
-            Next
+            End If
         Catch ex As Exception
             MessageBox.Show($"Failed to play sound: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
